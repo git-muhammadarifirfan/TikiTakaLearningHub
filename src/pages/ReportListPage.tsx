@@ -27,12 +27,8 @@ export const ReportListPage: React.FC = () => {
   const [selectedSubjectName, setSelectedSubjectName] = useState('Bahasa Inggris');
   const [teacherName, setTeacherName] = useState(user?.name || 'Miss Aura');
   const [periodLabel, setPeriodLabel] = useState('Minggu ke-3 dan ke-4 Bulan Agustus 2026');
-  const [achievements, setAchievements] = useState(
-    `- Ananda mengenal dan menghafal nama-nama hari dalam Bahasa Inggris dengan tepat.\n- Ananda mengenal dan menghafal nama-nama bulan dalam Bahasa Inggris dengan tepat.\n- Ananda memahami Times in a Day yaitu Morning, Afternoon, Evening, dan Night.\n- Ananda mengenal dan menghafal materi Animals (pet, farm animal, land animal, sea animal, bird, dan insect) beserta ciri khasnya`
-  );
-  const [nextProgress, setNextProgress] = useState(
-    `- Review materi Animals khususnya Sea Animal, Bird, dan Insect\n- Melanjutkan pembelajaran ke materi selanjutnya yaitu Fruit dan Vegetable.\n- Membiasakan mengerjakan soal secara mandiri agar pemahaman semakin kuat.\n- Meningkatkan fokus dan keseriusan saat mengerjakan soal latihan ataupun worksheet.`
-  );
+  const [achievements, setAchievements] = useState('-\n-\n-\n-');
+  const [nextProgress, setNextProgress] = useState('-\n-\n-\n-');
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
