@@ -28,5 +28,9 @@ dist-ssr
 .env.local
 .env.*.local
 
+# Documentation & Development Files
+docs/
+Development-Document/
+
 # Scratch and temp
 scratch_xlsx/
