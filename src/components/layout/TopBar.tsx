@@ -1,12 +1,16 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
-import { Search, Bell, User, LogOut, ChevronDown, Mail, Edit2, KeyRound, Check, X } from 'lucide-react';
+import { Search, Bell, User, LogOut, ChevronDown, Mail, Edit2, KeyRound, Check, X, Menu } from 'lucide-react';
 import { Modal, Button, Input } from '../ui';
 import { api } from '../../api/client';
 import { toast } from 'react-hot-toast';
 
-export const TopBar: React.FC = () => {
+interface TopBarProps {
+  onToggleSidebar?: () => void;
+}
+
+export const TopBar: React.FC<TopBarProps> = ({ onToggleSidebar }) => {
   const { user, logout, updateProfile } = useAuth();
   const location = useLocation();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -104,11 +108,21 @@ export const TopBar: React.FC = () => {
 
   return (
     <header className="topbar">
-      <div>
-        <h2 style={{ fontSize: '1.25rem', fontWeight: 600, textTransform: 'capitalize' }}>
-          {user?.name || 'Owner Bimbel'}
-        </h2>
-        <p style={{ fontSize: '0.75rem', color: 'var(--primary-pink)', fontWeight: 500 }}>{getBreadcrumbs()}</p>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <button
+          onClick={onToggleSidebar}
+          className="mobile-burger-btn"
+          aria-label="Open Sidebar Menu"
+        >
+          <Menu size={22} color="var(--text-main)" />
+        </button>
+
+        <div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 600, textTransform: 'capitalize' }}>
+            {user?.name || 'Owner Bimbel'}
+          </h2>
+          <p style={{ fontSize: '0.75rem', color: 'var(--primary-pink)', fontWeight: 500 }}>{getBreadcrumbs()}</p>
+        </div>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>

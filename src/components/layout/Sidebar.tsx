@@ -15,7 +15,12 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { APP_NAME, APP_TAGLINE } from '../../utils/constants';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
   const { isAdmin, logout } = useAuth();
 
   const navItems = [
@@ -30,47 +35,54 @@ export const Sidebar: React.FC = () => {
   ];
 
   return (
-    <aside className="sidebar">
-      <div className="sidebar-header">
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 'var(--radius-lg)',
-            background: 'linear-gradient(135deg, #ec4899, #f472b6)',
-            color: '#ffffff',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.4rem',
-            fontWeight: 800,
-            boxShadow: '0 6px 16px rgba(236, 72, 153, 0.35)',
-            flexShrink: 0,
-          }}
-        >
-          T
+    <>
+      {/* Mobile Backdrop Overlay */}
+      <div
+        className={`sidebar-overlay ${isOpen ? 'active' : ''}`}
+        onClick={onClose}
+      />
+      <aside className={`sidebar ${isOpen ? 'open' : ''}`}>
+        <div className="sidebar-header">
+          <div
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 'var(--radius-lg)',
+              background: 'linear-gradient(135deg, #ec4899, #f472b6)',
+              color: '#ffffff',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.4rem',
+              fontWeight: 800,
+              boxShadow: '0 6px 16px rgba(236, 72, 153, 0.35)',
+              flexShrink: 0,
+            }}
+          >
+            T
+          </div>
+          <div className="sidebar-brand">
+            <h1>{APP_NAME}</h1>
+            {APP_TAGLINE && <p>{APP_TAGLINE}</p>}
+          </div>
         </div>
-        <div className="sidebar-brand">
-          <h1>{APP_NAME}</h1>
-          {APP_TAGLINE && <p>{APP_TAGLINE}</p>}
-        </div>
-      </div>
 
-      <nav className="sidebar-nav">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          return (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
-            >
-              <Icon size={18} />
-              <span>{item.label}</span>
-            </NavLink>
-          );
-        })}
-      </nav>
+        <nav className="sidebar-nav">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                onClick={onClose}
+                className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={18} />
+                <span>{item.label}</span>
+              </NavLink>
+            );
+          })}
+        </nav>
 
       {/* Promo Card Motivasi Bahasa Inggris dengan Ilustrasi Rocket SVG & Tombol Sign Out */}
       <div className="sidebar-promo-card">
@@ -150,6 +162,7 @@ export const Sidebar: React.FC = () => {
         </button>
       </div>
     </aside>
+  </>
   );
 };
 export default Sidebar;
