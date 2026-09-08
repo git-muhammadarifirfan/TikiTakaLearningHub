@@ -281,6 +281,32 @@ export const StudentListPage: React.FC = () => {
     return { count: subs.length, title: firstSubject, progress };
   };
 
+  // Learning Path Logs State for Modal
+  const [modalLearningLogs, setModalLearningLogs] = useState<Record<string, any[]>>({});
+  const [loadingModalLogs, setLoadingModalLogs] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (goalManageStudent && goalManageStudent.subjects.length > 0) {
+      setLoadingModalLogs(true);
+      const logMap: Record<string, any[]> = {};
+      Promise.all(
+        goalManageStudent.subjects.map(async (ss) => {
+          try {
+            const logs = await api.request<any[]>('learning-path/list', { studentSubjectId: ss.student_subject_id });
+            logMap[ss.student_subject_id] = logs || [];
+          } catch (e) {
+            logMap[ss.student_subject_id] = [];
+          }
+        })
+      ).then(() => {
+        setModalLearningLogs(logMap);
+        setLoadingModalLogs(false);
+      });
+    } else {
+      setModalLearningLogs({});
+    }
+  }, [goalManageStudent]);
+
   return (
     <div className="page-container animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Top Page Header & Action */}
@@ -794,7 +820,7 @@ export const StudentListPage: React.FC = () => {
             </div>
 
             {/* Rekap Mapel & Topik Saat Ini */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
               {goalManageStudent.subjects.length === 0 ? (
                 <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem', background: '#f8fafc', borderRadius: 'var(--radius-lg)' }}>
                   Murid ini belum terdaftar di mapel spesifik. (Bisa di-assign melalui Detail Murid).
@@ -802,47 +828,103 @@ export const StudentListPage: React.FC = () => {
               ) : (
                 goalManageStudent.subjects.map((ss) => {
                   const isDone = ss.current_topic && ss.current_topic !== '-' && ss.current_topic !== '';
+                  const logs = modalLearningLogs[ss.student_subject_id] || [];
+
                   return (
                     <div
                       key={ss.student_subject_id}
                       style={{
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        padding: '0.75rem 0.85rem',
-                        background: isDone ? '#f0fdf4' : '#ffffff',
-                        border: `1px solid ${isDone ? '#bbf7d0' : 'var(--border)'}`,
+                        flexDirection: 'column',
+                        gap: '0.75rem',
+                        padding: '0.85rem 1rem',
+                        background: '#ffffff',
+                        border: `1px solid var(--border)`,
                         borderRadius: 'var(--radius-lg)',
                       }}
                     >
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.825rem', color: 'var(--text-main)' }}>
-                          {ss.subject_name || 'Mata Pelajaran'}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.875rem', color: 'var(--text-main)' }}>
+                            {ss.subject_name || 'Mata Pelajaran'}
+                          </div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                            Materi Utama / Goal: <strong style={{ color: 'var(--primary-pink)' }}>{ss.current_topic || 'Belum diisi'}</strong>
+                          </div>
                         </div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                          Materi Topik: <strong style={{ color: 'var(--text-main)' }}>{ss.current_topic || 'Belum diisi'}</strong>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span
+                            className="badge"
+                            style={{
+                              backgroundColor: isDone ? '#d1fae5' : '#fef3c7',
+                              color: isDone ? '#065f46' : '#92400e',
+                              fontSize: '0.72rem',
+                            }}
+                          >
+                            {isDone ? 'Selesai' : 'Dalam Proses'}
+                          </span>
+                          
+                          <Button
+                            className={`btn ${isDone ? 'btn-secondary' : 'btn-primary-pink'}`}
+                            style={{ padding: '0.3rem 0.65rem', fontSize: '0.72rem' }}
+                            onClick={() => handleToggleGoalTopic(ss)}
+                          >
+                            {isDone ? 'Batalkan Selesai' : 'Tandai Selesai'}
+                          </Button>
                         </div>
                       </div>
 
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                        <span
-                          className="badge"
-                          style={{
-                            backgroundColor: isDone ? '#d1fae5' : '#fef3c7',
-                            color: isDone ? '#065f46' : '#92400e',
-                            fontSize: '0.72rem',
-                          }}
-                        >
-                          {isDone ? 'Selesai' : 'Dalam Proses'}
-                        </span>
-                        
-                        <Button
-                          className={`btn ${isDone ? 'btn-secondary' : 'btn-primary-pink'}`}
-                          style={{ padding: '0.3rem 0.65rem', fontSize: '0.72rem' }}
-                          onClick={() => handleToggleGoalTopic(ss)}
-                        >
-                          {isDone ? 'Batalkan Selesai' : 'Tandai Selesai'}
-                        </Button>
+                      {/* Timeline Riwayat Learning Path Log */}
+                      <div style={{ borderTop: '1px dashed var(--border)', paddingTop: '0.65rem', marginTop: '0.25rem' }}>
+                        <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-main)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <Sparkles size={14} color="var(--primary-pink)" />
+                          <span>Riwayat Progress Learning Path (Aktivitas Belajar):</span>
+                        </div>
+
+                        {loadingModalLogs ? (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>Memuat riwayat aktivitas...</div>
+                        ) : logs.length === 0 ? (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', background: '#f8fafc', padding: '0.5rem 0.75rem', borderRadius: 'var(--radius-md)' }}>
+                            Belum ada riwayat aktivitas log. (Riwayat terisi otomatis saat presensi atau guru mencatat materi).
+                          </div>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.45rem', maxHeight: '180px', overflowY: 'auto' }}>
+                            {logs.map((log, idx) => (
+                              <div
+                                key={log.log_id || idx}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'flex-start',
+                                  justifyContent: 'space-between',
+                                  background: '#fdf2f8',
+                                  padding: '0.45rem 0.75rem',
+                                  borderRadius: 'var(--radius-md)',
+                                  fontSize: '0.75rem',
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontWeight: 600, color: '#9d174d' }}>{log.topic || log.notes || 'Pertemuan Les'}</div>
+                                  {log.notes && log.notes !== log.topic && (
+                                    <div style={{ color: 'var(--text-muted)', fontSize: '0.72rem' }}>Catatan: {log.notes}</div>
+                                  )}
+                                  <div style={{ color: '#94a3b8', fontSize: '0.68rem', marginTop: '0.1rem' }}>Tanggal: {log.date || '-'}</div>
+                                </div>
+                                <span
+                                  className="badge"
+                                  style={{
+                                    backgroundColor: log.topic_status === 'selesai' ? '#d1fae5' : '#fef3c7',
+                                    color: log.topic_status === 'selesai' ? '#065f46' : '#92400e',
+                                    fontSize: '0.68rem',
+                                    padding: '0.15rem 0.45rem',
+                                  }}
+                                >
+                                  {log.topic_status || 'Selesai'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
