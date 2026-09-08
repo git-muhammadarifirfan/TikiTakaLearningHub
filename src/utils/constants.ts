@@ -46,4 +46,8 @@ export const MAKEUP_STATUS_OPTIONS = [
 export const STORAGE_KEYS = {
   AUTH_TOKEN: 'tikatrack_token',
   AUTH_USER: 'tikatrack_user',
+  SESSION_EXPIRES: 'tikatrack_session_expires',
 } as const;
+
+// Session TTL: 40 Hari (dalam milidetik)
+export const FORTY_DAYS_MS = 40 * 24 * 60 * 60 * 1000;

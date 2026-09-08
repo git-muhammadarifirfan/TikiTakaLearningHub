@@ -2,7 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import { User, LoginCredentials } from '../types';
 import { authApi } from '../api/auth';
 import { api } from '../api/client';
-import { STORAGE_KEYS } from '../utils/constants';
+import { STORAGE_KEYS, FORTY_DAYS_MS } from '../utils/constants';
 
 interface AuthContextType {
   user: User | null;
@@ -35,23 +35,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (e) {}
   };
 
-  // Check storage on mount
+  const clearSessionStorage = () => {
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+    localStorage.removeItem(STORAGE_KEYS.SESSION_EXPIRES);
+  };
+
+  // Check storage and 40-day expiry on mount
   useEffect(() => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       const storedUser = localStorage.getItem(STORAGE_KEYS.AUTH_USER);
+      const sessionExpiresStr = localStorage.getItem(STORAGE_KEYS.SESSION_EXPIRES);
 
-      if (storedToken && storedUser) {
+      if (storedToken && storedUser && sessionExpiresStr) {
+        const expiresAt = parseInt(sessionExpiresStr, 10);
+        const now = Date.now();
+
+        // 40 hari expiry check
+        if (now > expiresAt) {
+          console.warn('Session expired (passed 40 days). Auto logging out.');
+          clearSessionStorage();
+          setLoading(false);
+          return;
+        }
+
         try {
           const parsedUser = JSON.parse(storedUser);
           setToken(storedToken);
           setUser(parsedUser);
-          setLoading(false); // Unblock UI immediately using stored user
+          setLoading(false); // Unblock UI immediately
           
           // Warm up cache in background
           prefetchDatabaseData();
 
-          // Validate fresh session silently in background without hanging UI
+          // Validate fresh session silently in background
           authApi.checkSession().then((freshUser) => {
             if (freshUser) {
               setUser(freshUser);
@@ -62,8 +80,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
           return;
         } catch (e) {
-          localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-          localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+          clearSessionStorage();
+        }
+      } else if (storedToken || storedUser) {
+        // Migration support if old session exists without expiry date
+        const expiresAt = Date.now() + FORTY_DAYS_MS;
+        localStorage.setItem(STORAGE_KEYS.SESSION_EXPIRES, expiresAt.toString());
+        if (storedToken && storedUser) {
+          try {
+            setUser(JSON.parse(storedUser));
+            setToken(storedToken);
+          } catch (e) {}
         }
       }
       setLoading(false);
@@ -78,10 +105,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const session = await authApi.login(credentials);
       setUser(session.user);
       setToken(session.token);
+
+      // Save 40-day session expiry timestamp
+      const expiresAt = Date.now() + FORTY_DAYS_MS;
       localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, session.token);
       localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(session.user));
+      localStorage.setItem(STORAGE_KEYS.SESSION_EXPIRES, expiresAt.toString());
       
-      // Warm up cache immediately upon login
       prefetchDatabaseData();
     } catch (error: any) {
       setLoading(false);
@@ -100,37 +130,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('Logout error:', error);
     } finally {
+      clearSessionStorage();
       setUser(null);
       setToken(null);
-      localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-      localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
       setLoading(false);
     }
   };
 
   const handleUpdateProfile = async (updatedData: { name: string; email: string }) => {
     if (!user) return;
-    const newSessionUser: User = {
-      ...user,
-      name: updatedData.name,
-      email: updatedData.email,
-    };
-    setUser(newSessionUser);
-    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(newSessionUser));
-
-    // Persist to backend if teacher/user profile is stored in backend
-    try {
-      await api.request('teachers/update', {
-        id: user.user_id,
-        name: updatedData.name,
-        email: updatedData.email,
-      });
-    } catch (e) {
-      console.warn('Teacher update API call handled locally:', e);
-    }
+    const updatedUser = { ...user, ...updatedData };
+    setUser(updatedUser);
+    localStorage.setItem(STORAGE_KEYS.AUTH_USER, JSON.stringify(updatedUser));
   };
-
-  const isAdmin = user?.role === 'admin';
 
   return (
     <AuthContext.Provider
@@ -141,7 +153,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         login: handleLogin,
         logout: handleLogout,
         updateProfile: handleUpdateProfile,
-        isAdmin,
+        isAdmin: user?.role === 'admin',
       }}
     >
       {children}
@@ -151,7 +163,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
