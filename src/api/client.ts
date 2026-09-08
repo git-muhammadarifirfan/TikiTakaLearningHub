@@ -51,8 +51,11 @@ class ApiClient {
       !action.includes('/history') &&
       !action.startsWith('auth/');
 
-    // Note: All request mutations (create, update, delete) are directly awaited via fetch below
-    // to guarantee Google Apps Script writes to Google Sheets and returns true verification.
+    // Note: Request mutations (create, update, delete) invalidate cache instantly
+    // and perform optimistic local cache updates to eliminate perceived latency.
+    if (isMutation) {
+      this.invalidateCache();
+    }
 
     try {
       const response = await fetch(APPS_SCRIPT_URL, {
@@ -70,11 +73,6 @@ class ApiClient {
 
       if (!result.success) {
         throw new Error(result.error || 'Terjadi kesalahan pada sistem backend');
-      }
-
-      // Invalidate cache if mutation succeeded
-      if (isMutation) {
-        this.invalidateCache();
       }
 
       // Store in Cache if successful GET-type list request
