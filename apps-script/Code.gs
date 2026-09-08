@@ -370,7 +370,7 @@ function handleForgotPassword(ss, data) {
 
   // Send actual email via Gmail
   try {
-    var subject = 'TikaTrack — Reset Kata Sandi Anda';
+    var subject = 'TikaTrack - Reset Kata Sandi Anda';
     var htmlBody = '<div style="font-family:Arial,sans-serif;max-width:520px;margin:0 auto;padding:24px;border:1px solid #f1f5f9;border-radius:12px">'
       + '<div style="text-align:center;margin-bottom:20px">'
       + '<div style="display:inline-block;width:48px;height:48px;background:#ec4899;color:#fff;border-radius:12px;line-height:48px;font-size:24px;font-weight:800">T</div>'
